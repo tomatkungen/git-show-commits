@@ -1,7 +1,7 @@
 const util = require('node:util');
 const exec = util.promisify(require('node:child_process').exec);
 
-const git_log_author = 'git log -i --author="\\(tomat\\)" --pretty="{%n \"author\":{ \"date\": \"%ai\", \"name\": \"%an\", \"email\":\"%ae\" } %n}" --name-status';
+const git_log_author = 'git log -i --author="\\(tomat\\)" --pretty=format:"{%n \\"author\\":{ \\"date\\": \\"%ai\\", \\"name\\": \\"%an\\", \\"email\\": \\"%ae\\" } %n}" --name-status';
 
 const git_show_author = async () => {
     const { stdout, stderr, error } = await exec(git_log_author);
