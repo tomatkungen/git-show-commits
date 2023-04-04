@@ -35,10 +35,40 @@ const create_show_author_json = (gitLog) => {
         M	parse.js
      */
 
-    console.log(gitLog);
-    lines.forEach((line) => {
+    let ary = [];
+    let res = '[\n';
+    // console.log(gitLog);
 
+    lines.forEach((line, index) => {
+        
+        if (line.includes('{') && line.includes('}')) {
+
+            if (index !== (lines.length - 1) && index > 2) {
+                res += `\t\t${ary.join(',')}\n`;
+                res += `\t]\n`;
+                res += `},\n`;
+                ary = [];
+            }
+
+            res += `{\n`;
+            res += `\t${line.trim()},\n`;
+            res += `\t"file": [\n`;
+
+            return;
+        }
+
+        if (!line.includes('{') && !line.includes('}') && line.trim() !== '') {
+            const fp = line.replace(/\s+/g,' ').split(' ');
+            ary.push(`{ "status": "${fp[0]}", "path": "${fp[1]}" }`);
+        }
+
+        if (index === lines.length -1) {
+            res += `\t]\n`;
+            res += `}\n`;
+        }
     });
+    res += ']\n'
+    console.log(res);
 }
 
 const get_arg = () => {
@@ -48,7 +78,7 @@ const get_arg = () => {
     };
 
     argv.forEach((val, index) => {
-        console.log(`${index}: ${val}`);
+        // console.log(`${index}: ${val}`);
 
         if (val.startsWith('--path=')) {
             arg.path = val.split('=')[1];
