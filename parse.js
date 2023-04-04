@@ -1,7 +1,7 @@
 const util = require('node:util');
 const exec = util.promisify(require('node:child_process').exec);
 const { argv } = require('node:process');
-
+const fs = require('fs');
 
 // Commands
 const git_show_json = async () => {
@@ -40,7 +40,7 @@ const create_show_author_json = (gitLog) => {
     // console.log(gitLog);
 
     lines.forEach((line, index) => {
-        
+
         if (line.includes('{') && line.includes('}')) {
 
             if (index !== (lines.length - 1) && index > 2) {
@@ -58,23 +58,34 @@ const create_show_author_json = (gitLog) => {
         }
 
         if (!line.includes('{') && !line.includes('}') && line.trim() !== '') {
-            const fp = line.replace(/\s+/g,' ').split(' ');
+            const fp = line.replace(/\s+/g, ' ').split(' ');
             ary.push(`{ "status": "${fp[0]}", "path": "${fp[1]}" }`);
         }
 
-        if (index === lines.length -1) {
+        if (index === lines.length - 1) {
+            res += `\t\t${ary.join(',')}\n`;
             res += `\t]\n`;
             res += `}\n`;
         }
     });
-    res += ']\n'
+    res += ']\n';
+
+    if (get_arg().write === 'true') {
+        try {
+            fs.writeFileSync('log.json', res);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
     console.log(res);
 }
 
 const get_arg = () => {
     const arg = { // Default
         path: '.',
-        users: ["tomat"]
+        users: ["tomat"],
+        write: 'true',
     };
 
     argv.forEach((val, index) => {
@@ -82,9 +93,12 @@ const get_arg = () => {
 
         if (val.startsWith('--path=')) {
             arg.path = val.split('=')[1];
-        } 
+        }
         if (val.startsWith('--users=')) {
-            arg.users = val.split('=')[0].split(',');
+            arg.users = val.split('=')[1].split(',');
+        }
+        if (val.startsWith('--file=')) {
+            arg.write = val.split('=')[1];
         }
     });
 
