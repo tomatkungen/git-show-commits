@@ -6,7 +6,7 @@ const fs = require('fs');
 // Commands
 const git_show_json = async () => {
     const git_log_users = get_arg().users.map((u) => (`\\(${u}\\)`)).join('\\|');
-    const command_git_log_author = `git log -i --author="${git_log_users}" --pretty=format:"{%n \\"author\\":{ \\"date\\": \\"%ai\\", \\"name\\": \\"%an\\", \\"email\\": \\"%ae\\" } %n}" --name-status`;
+    const command_git_log_author = `git log -i --author="${git_log_users}" --pretty=format:"{%n \\"author\\":{ \\"date\\": \\"%ai\\", \\"name\\": \\"%an\\", \\"email\\": \\"%ae\\", \\"commit\\": \\"%s\\", \\"hash\\": \\"%h\\" } %n}" --name-status`;
     const command_cd = `cd ${get_arg().path}`;
 
     const { stdout, stderr, error } = await exec(`${command_cd} && ${command_git_log_author}`);
@@ -52,7 +52,7 @@ const create_show_author_json = (gitLog) => {
 
             res += `{\n`;
             res += `\t${line.trim()},\n`;
-            res += `\t"file": [\n`;
+            res += `\t"files": [\n`;
 
             return;
         }
