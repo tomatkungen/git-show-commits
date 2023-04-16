@@ -5,8 +5,8 @@ type CardCommitProps = {
     selected?: boolean,
     active?: boolean,
     subTitle?: string,
-    index?: string,
-    onClick?: (selectedIndex: string) => void,
+    index?: number,
+    onClick?: (selectedIndex: number) => void,
     cardContentChild?: React.ReactNode,
     textAlign?: React.CSSProperties['textAlign']
 };
@@ -16,7 +16,7 @@ export const CardCommit = ({
     selected = false,
     active = false,
     subTitle,
-    index = '',
+    index = -1,
     onClick,
     cardContentChild,
     textAlign = 'left'

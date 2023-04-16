@@ -1,74 +1,114 @@
 import { Box, Divider, Stack, Typography } from "@mui/material";
-import { useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { useContext, useState } from "react";
 import logs from '../../../log.json';
 import { Scroll } from "../components/scroll/scroll";
+import { GitContext } from "../provider/git.provider";
 import { CardCommit } from "./card-commit/card-commit";
 
-type TrunkLog = {
-    file: string;
-    path: string;
-    names: string[];
-    emails: string[];
-    commits: string[];
-    hash: string[];
-    totalCommits: number;
-    totalDeleted: number;
-    totalAdded: number;
-    totalModified: number;
-}[];
-
 export const CommitView = () => {
-    const [selectedCommitIndex, setSelectedCommitIndex] = useState<string>('');
-    const [selectedFileIndex, setSelectedFileIndex] = useState<string>('');
+    const [selectedCommitIndex, setSelectedCommitIndex] = useState<number>(-1);
+    const [selectedFileIndex, setSelectedFileIndex] = useState<number>(-1);
 
-    const handleClickFile = (selectedIndex: string) => {
-        setSelectedFileIndex(selectedIndex);
+    const gitContext = useContext(GitContext)
+
+    const handleClickFile = (index: number) => {
+        setSelectedFileIndex(index);
     }
 
-    const handleClickCommit = (selectedIndex: string) => {
-        setSelectedCommitIndex(selectedIndex);
+    const handleClickCommit = (index: number) => {
+        setSelectedCommitIndex(index);
     }
 
-    const trunkLog = getTrunkLog();
-    // console.log(trunkLog);
+    const renderGitCommits = (fileIndex: number) => {
+        return (
+            <>
+                {fileIndex === -1 && <CardCommit title={`<- Select`} textAlign={'center'} />}
+                {fileIndex !== -1 &&
+                    gitContext
+                        .getGitCommitsByHash(gitFlatLogs[selectedFileIndex].hash)
+                        .map(({ author }) => (
+                            <CardCommit
+                                title={author.commit}
+                                subTitle={`${author.name} (${author.email})`}
+                                key={author.hash}
+                                textAlign={'center'}
+                                cardContentChild={
+                                    <Box display={'flex'} flexDirection={'column'}>
+                                        <Typography variant={'caption'}>
+                                            {`Commit - ${formatDistanceToNow(new Date(author.date))}`}
+                                        </Typography>
+                                        <Typography variant={'caption'}>
+                                            {`hash - ${author.hash}`}
+                                        </Typography>
+                                    </Box>
+                                }
+                            />
+                        ))
+                }
+            </>
+        )
+    }
+
+    const renderGitFiles = (commitIndex: number) => {
+        return (
+            <>
+                {commitIndex === -1 && <CardCommit title={`Select ->`} textAlign={'center'} />}
+                {commitIndex !== -1 &&
+                    gitContext
+                        .getGitCommitFilesByHash(logs[commitIndex].author.hash)
+                        .map((log, index) => (
+                            <CardCommit
+                                title={log.file}
+                                subTitle={log.path.replace(log.file, '')}
+                                key={index}
+                                textAlign={'center'}
+                                cardContentChild={
+                                    <Box display={'flex'} flexDirection={'column'}>
+                                        <Typography variant={'caption'} textAlign={'right'}>{`Commits - ${log.totalCommits}`}</Typography>
+                                        <Typography variant={'caption'} textAlign={'right'}>{`Deleted - ${log.totalDeleted}`}</Typography>
+                                        <Typography variant={'caption'} textAlign={'right'}>{`Added - ${log.totalAdded}`}</Typography>
+                                        <Typography variant={'caption'} textAlign={'right'}>{`Modied - ${log.totalModified}`}</Typography>
+                                    </Box>
+                                }
+                            />
+                        ))
+                }
+            </>
+        )
+    }
+
+    const gitFlatLogs = gitContext.getGitFlatLogs();
+
     return (
         <Stack direction={'row'}>
             <Scroll>
-                {trunkLog.map(({ file, path, commits, totalCommits, totalDeleted }, index) => (
+                {gitFlatLogs.map(({ file, path, commits, totalCommits }, index) => (
                     <CardCommit /*10 - 21*/
-                        key={`path-${index}`}
-                        index={`path-${index}`}
-                        selected={selectedFileIndex === `path-${index}`}
+                        key={index}
+                        index={index}
+                        selected={selectedFileIndex === index}
                         title={`${file.toUpperCase()} (${totalCommits})`}
                         subTitle={path.replace(file, '')}
                         onClick={handleClickFile}
-                        cardContentChild={
-                            <Box display={'flex'} flexDirection={'column'}>
-                                {commits.map((c, index) => (<Typography key={index} variant={'caption'}>{c}</Typography>))}
-                            </Box>
-                        }
                     />
                 ))}
             </Scroll>
             <Divider orientation="vertical" variant="middle" flexItem />
             <Scroll>
-                <CardCommit 
-                    title={`<- Select`}
-                    textAlign={'center'}/>
+                {renderGitCommits(selectedFileIndex)}
             </Scroll>
             <Divider orientation="vertical" variant="middle" flexItem />
             <Scroll>
-                <CardCommit 
-                    title={`Select ->`}
-                    textAlign={'center'}/>
+                {renderGitFiles(selectedCommitIndex)}
             </Scroll>
             <Divider orientation="vertical" variant="middle" flexItem />
             <Scroll>
                 {logs.map(({ author }, index) => (
                     <CardCommit /* 7 - 13 */
-                        key={`commit-${index}`}
-                        index={`commit-${index}`}
-                        selected={selectedCommitIndex === `commit-${index}`}
+                        key={index}
+                        index={index}
+                        selected={selectedCommitIndex === index}
                         title={author.commit}
                         subTitle={`${author.name} (${author.email})`}
                         onClick={handleClickCommit}
@@ -78,45 +118,4 @@ export const CommitView = () => {
         </Stack>
     );
 }
-
-const getTrunkLog = (): TrunkLog => {
-    return logs.reduce<TrunkLog>((p, c) => {
-        c.files.forEach(({ status, path }) => {
-            const index = p.findIndex(({ path: absolutePath }) => (absolutePath === path))
-
-            if (index === -1) {
-                p.push({
-                    file: path.split('/').pop() || '',
-                    path,
-                    names: [c.author.name],
-                    emails: [c.author.email],
-                    commits: [c.author.commit],
-                    hash: [c.author.hash],
-                    totalCommits: 1,
-                    totalDeleted: (status === 'D' ? 1 : 0),
-                    totalAdded: (status === 'A' ? 1 : 0),
-                    totalModified: (status === 'M' ? 1 : 0)
-                });
-
-                return p;
-            }
-
-            p[index].totalCommits += 1;
-
-            !p[index].names.includes(c.author.name) && p[index].names.push(c.author.name);
-            !p[index].emails.includes(c.author.email) && p[index].emails.push(c.author.email);
-            !p[index].commits.includes(c.author.commit) && p[index].commits.push(c.author.commit);
-            !p[index].hash.includes(c.author.hash) && p[index].hash.push(c.author.hash);
-
-            status === 'D' && (p[index].totalDeleted += 1);
-            status === 'A' && (p[index].totalAdded += 1);
-            status === 'M' && (p[index].totalModified += 1);
-
-            return p;
-        })
-
-        return p;
-    }, [])
-}
-
-// 107 - 124
+// 84 - 124

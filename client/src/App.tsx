@@ -1,6 +1,7 @@
 import { createTheme, CssBaseline, ThemeProvider } from '@mui/material';
 import './App.css';
-import { CommitView } from './commit-view/commit-view';
+import { MainView } from './main-view/main-view';
+import { GitProvider } from './provider/git.provider';
 
 const darkTheme = createTheme({
   palette: {
@@ -44,7 +45,9 @@ function App() {
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
-      <CommitView />
+      <GitProvider>
+        <MainView />
+      </GitProvider>
     </ThemeProvider>
   )
 }
