@@ -1,5 +1,5 @@
 import { createTheme, CssBaseline, ThemeProvider } from '@mui/material';
-import { MainView } from './ view/main-view/main-view';
+import { MainView } from './view/main-view/main-view';
 import { GitProvider } from './provider/git.provider';
 
 const darkTheme = createTheme({
