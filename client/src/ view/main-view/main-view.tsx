@@ -29,7 +29,7 @@ export const MainView = () => {
     }
 
     return (
-        <Box>
+        <Box m={4}>
             <Tabs value={tab} onChange={handleChange} aria-label="basic tabs example">
                 <Tab label="Commits" />
                 <Tab label="Files" />

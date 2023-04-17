@@ -1,9 +1,9 @@
 import { Box, Divider, Stack, Typography } from "@mui/material";
 import { formatDistanceToNow } from "date-fns";
 import { useContext, useState } from "react";
-import logs from '../../../log.json';
-import { Scroll } from "../components/scroll/scroll";
-import { GitContext } from "../provider/git.provider";
+import logs from '../../../../log.json';
+import { Scroll } from "../../components/scroll/scroll";
+import { GitContext } from "../../provider/git.provider";
 import { CardCommit } from "./card-commit/card-commit";
 
 export const CommitView = () => {

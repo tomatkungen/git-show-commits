@@ -20,12 +20,14 @@ type GitCreateContext = {
     getGitFlatLogs(): FlatLog[];
     getGitCommitsByHash(hash: string[]): typeof logs;
     getGitCommitFilesByHash(hash: string): FlatLog[];
+    getGitCommitFilesSuffix(): string[];
 }
 
 export const GitContext = React.createContext<GitCreateContext>({
     getGitFlatLogs: () => [],
     getGitCommitsByHash: () => [],
-    getGitCommitFilesByHash: () => []
+    getGitCommitFilesByHash: () => [],
+    getGitCommitFilesSuffix: () => []
 });
 
 export const GitProvider = ({ children }: GitProviderProps) => {
@@ -33,16 +35,31 @@ export const GitProvider = ({ children }: GitProviderProps) => {
     const getGitFlatLogs = (): FlatLog[] => (gitFlatLogs());
     const getGitCommitsByHash = (hash: string[]): typeof logs => (gitCommitsByHash(hash));
     const getGitCommitFilesByHash = (hash: string): FlatLog[] => (gitCommitFilesByHash(hash));
+     const getGitCommitFilesSuffix = (): string[] => (gitCommitFilesSuffix());
 
     return (
         <GitContext.Provider value={{
             getGitFlatLogs,
             getGitCommitsByHash,
-            getGitCommitFilesByHash
+            getGitCommitFilesByHash,
+            getGitCommitFilesSuffix
         }}>
             {children}
         </GitContext.Provider>
     )
+}
+
+const gitCommitFilesSuffix = (): string[] => {
+    return gitFlatLogs()
+        .reduce((p, c) => {
+            const lastSuffix = c.file.split('.').pop() || '';
+
+            if (!p.includes(`.${lastSuffix}`)) {
+                p.push(`.${lastSuffix}`);
+            }
+
+            return p;
+        }, [] as string[]);
 }
 
 const gitCommitFilesByHash = (hash: string) => {
@@ -56,7 +73,7 @@ const gitCommitsByHash = (hash: string[]) => (
         (hash.includes(author.hash)))
 );
 
-const gitFlatLogs = () => {
+const gitFlatLogs = (): FlatLog[] => {
     return logs.reduce<FlatLog[]>((p, c) => {
         c.files.forEach(({ status, path }) => {
             const index = p.findIndex(({ path: absolutePath }) => (absolutePath === path))
