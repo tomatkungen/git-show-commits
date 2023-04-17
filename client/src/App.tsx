@@ -1,5 +1,4 @@
 import { createTheme, CssBaseline, ThemeProvider } from '@mui/material';
-import './App.css';
 import { MainView } from './main-view/main-view';
 import { GitProvider } from './provider/git.provider';
 
