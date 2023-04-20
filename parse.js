@@ -50,6 +50,12 @@ const create_show_author_json = (gitLog) => {
                 ary = [];
             }
 
+            // escape double qouates in string literal, " hej"san" " -> " hej\"san\" "
+            line = line.replace(
+                /"((?:"[^"]*"|[^"])*?)"(?=[:},])(?=(?:"[^"]*"|[^"])*$)/g,
+                (m, g) => (g.includes('"') ? `"${g.replace(/"/g, '\\"')}"` : m)
+            );
+
             res += `{\n`;
             res += `\t${line.trim()},\n`;
             res += `\t"files": [\n`;
@@ -97,7 +103,7 @@ const get_arg = () => {
         if (val.startsWith('--users=')) {
             arg.users = val.split('=')[1].split(',');
         }
-        if (val.startsWith('--file=')) {
+        if (val.startsWith('--write=')) {
             arg.write = val.split('=')[1];
         }
     });
