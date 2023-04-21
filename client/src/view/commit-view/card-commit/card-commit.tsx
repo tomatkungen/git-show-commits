@@ -1,10 +1,10 @@
 import { Card, CardActionArea, CardContent, CardHeader } from "@mui/material";
 
 type CardCommitProps = {
-    title: string,
+    title: React.ReactNode,
     selected?: boolean,
     active?: boolean,
-    subTitle?: string,
+    subTitle?: React.ReactNode,
     index?: number,
     onClick?: (selectedIndex: number) => void,
     cardContentChild?: React.ReactNode,

@@ -59,8 +59,17 @@ export const CommitView = () => {
                         .getGitCommitFilesByHash(logs[commitIndex].author.hash)
                         .map((log, index) => (
                             <CardCommit
-                                title={log.file}
-                                subTitle={log.path.replace(log.file, '')}
+                                title={<Box sx={{ textDecoration: (log.totalDeleted >= 1 ? 'line-through' : '') }}>{`${log.file.toUpperCase()} (${log.totalCommits})`}</Box>}
+                                subTitle={
+                                    <Box>
+                                        <Box>{log.path.replace(log.file, '')}</Box>
+                                        {log.strikePaths.map((strikePath) => (
+                                            <Box sx={{ textDecoration: 'line-through' }}>
+                                                {strikePath.replace(log.file, '')}
+                                            </Box>
+                                        ))}
+                                    </Box>
+                                }
                                 key={index}
                                 textAlign={'center'}
                                 cardContentChild={
@@ -69,6 +78,8 @@ export const CommitView = () => {
                                         <Typography variant={'caption'} textAlign={'right'}>{`Deleted - ${log.totalDeleted}`}</Typography>
                                         <Typography variant={'caption'} textAlign={'right'}>{`Added - ${log.totalAdded}`}</Typography>
                                         <Typography variant={'caption'} textAlign={'right'}>{`Modied - ${log.totalModified}`}</Typography>
+                                        <Typography variant={'caption'} textAlign={'right'}>{`Copy - ${log.totalCopied}`}</Typography>
+                                        <Typography variant={'caption'} textAlign={'right'}>{`Rename - ${log.totalRenamed}`}</Typography>
                                     </Box>
                                 }
                             />
@@ -82,28 +93,37 @@ export const CommitView = () => {
 
     return (
         <Stack direction={'row'}>
-            <Scroll>
-                {gitFlatLogs.map(({ file, path, commits, totalCommits }, index) => (
+            <Scroll width={'25%'}>
+                {gitFlatLogs.map(({ file, path, totalCommits, strikePaths, totalDeleted }, index) => (
                     <CardCommit /*10 - 21*/
                         key={index}
                         index={index}
                         selected={selectedFileIndex === index}
-                        title={`${file.toUpperCase()} (${totalCommits})`}
-                        subTitle={path.replace(file, '')}
+                        title={<Box sx={{ textDecoration: (totalDeleted >= 1 ? 'line-through' : '') }}>{`${file.toUpperCase()} (${totalCommits})`}</Box>}
+                        subTitle={
+                            <Box>
+                                <Box>{path.replace(file, '')}</Box>
+                                {strikePaths.map((strikePath) => (
+                                    <Box sx={{ textDecoration: 'line-through' }}>
+                                        {strikePath.replace(file, '')}
+                                    </Box>
+                                ))}
+                            </Box>
+                        }
                         onClick={handleClickFile}
                     />
                 ))}
             </Scroll>
             <Divider orientation="vertical" variant="middle" flexItem />
-            <Scroll>
+            <Scroll width={'25%'}>
                 {renderGitCommits(selectedFileIndex)}
             </Scroll>
             <Divider orientation="vertical" variant="middle" flexItem />
-            <Scroll>
+            <Scroll width={'25%'}>
                 {renderGitFiles(selectedCommitIndex)}
             </Scroll>
             <Divider orientation="vertical" variant="middle" flexItem />
-            <Scroll>
+            <Scroll width={'25%'}>
                 {logs.map(({ author }, index) => (
                     <CardCommit /* 7 - 13 */
                         key={index}

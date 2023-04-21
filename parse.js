@@ -65,7 +65,10 @@ const create_show_author_json = (gitLog) => {
 
         if (!line.includes('{') && !line.includes('}') && line.trim() !== '') {
             const fp = line.replace(/\s+/g, ' ').split(' ');
-            ary.push(`{ "status": "${fp[0]}", "path": "${fp[1]}" }`);
+                        
+            const status = fp.shift();
+            const paths = `[${fp.map((f) => (`"${f}"`)).join(', ')}]`
+            ary.push(`{ "status": "${status}", "paths": ${paths} }`);
         }
 
         if (index === lines.length - 1) {

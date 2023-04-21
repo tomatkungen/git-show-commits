@@ -6,6 +6,7 @@ type GitProviderProps = React.PropsWithChildren<{}>
 type FlatLog = {
     file: string;
     path: string;
+    strikePaths: string[];
     names: string[];
     emails: string[];
     commits: string[];
@@ -14,6 +15,8 @@ type FlatLog = {
     totalDeleted: number;
     totalAdded: number;
     totalModified: number;
+    totalCopied: number;
+    totalRenamed: number;
 };
 
 type GitCreateContext = {
@@ -75,27 +78,35 @@ const gitCommitsByHash = (hash: string[]) => (
 
 const gitFlatLogs = (): FlatLog[] => {
     return logs.reduce<FlatLog[]>((p, c) => {
-        c.files.forEach(({ status, path }) => {
-            const index = p.findIndex(({ path: absolutePath }) => (absolutePath === path))
+        c.files.forEach(({ status, paths }) => {
+            const index = p.findIndex(({ path: absolutePath }) => (absolutePath === paths[paths.length - 1]))
+
+            const currentPath = paths[paths.length - 1];
+            const strikePaths = [...paths].reverse();
+            strikePaths.shift();
 
             if (index === -1) {
                 p.push({
-                    file: path.split('/').pop() || '',
-                    path,
+                    file: currentPath.split('/').pop() || '',
+                    path: currentPath,
+                    strikePaths,
                     names: [c.author.name],
                     emails: [c.author.email],
                     commits: [c.author.commit],
                     hash: [c.author.hash],
                     totalCommits: 1,
-                    totalDeleted: (status === 'D' ? 1 : 0),
-                    totalAdded: (status === 'A' ? 1 : 0),
-                    totalModified: (status === 'M' ? 1 : 0)
+                    totalDeleted: (status === 'D' ? 1 : 0),         // Delete
+                    totalAdded: (status === 'A' ? 1 : 0),           // Added
+                    totalModified: (status === 'M' ? 1 : 0),        // Modified
+                    totalCopied: (status.includes('C') ? 1: 0),     // Copy
+                    totalRenamed: (status.includes('R') ? 1 : 0)    // Renaming
                 });
 
                 return p;
             }
 
             p[index].totalCommits += 1;
+            p[index].strikePaths = [...p[index].strikePaths, ...strikePaths];
 
             !p[index].names.includes(c.author.name) && p[index].names.push(c.author.name);
             !p[index].emails.includes(c.author.email) && p[index].emails.push(c.author.email);
@@ -105,6 +116,8 @@ const gitFlatLogs = (): FlatLog[] => {
             status === 'D' && (p[index].totalDeleted += 1);
             status === 'A' && (p[index].totalAdded += 1);
             status === 'M' && (p[index].totalModified += 1);
+            status.includes('C') && (p[index].totalCopied += 1);
+            status.includes('R') && (p[index].totalRenamed += 1);
 
             return p;
         })
