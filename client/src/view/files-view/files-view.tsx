@@ -1,7 +1,8 @@
 import { Box, Typography } from "@mui/material";
-import { useContext, useEffect, useState } from "react";
-import { CheckboxLabel } from "../../components/checkbox-label/checkbox-label";
+import { useContext, useState } from "react";
+import { Scroll } from "../../components/scroll/scroll";
 import { GitContext } from "../../provider/git.provider";
+import { FilterMenuSuffix } from "./filter-menu-suffix/filter-menu-suffix";
 
 export const FilesView = () => {
     const [checkboxFilter, setCheckboxFilter] = useState<string[]>([]);
@@ -10,7 +11,7 @@ export const FilesView = () => {
     const gitFlatLogs = gitContext.getGitFlatLogs();
     const gitCommitFilesSuffix = gitContext.getGitCommitFilesSuffix();
 
-    const handleCheckbox = (label: string, _: boolean) => {
+    const handleCheckbox = (label: string) => {
         const index = checkboxFilter.indexOf(label);
 
         index === -1 && checkboxFilter.push(label);
@@ -21,42 +22,40 @@ export const FilesView = () => {
 
     return (
         <Box display={'flex'} flexDirection={'column'} p={1}>
-            <Box display={'flex'} flexDirection={'row'}>
-                {gitCommitFilesSuffix.map((gitCommitFileSuffix, index) => (
-                    <CheckboxLabel
-                        key={index}
-                        onChange={handleCheckbox}
-                        text={gitCommitFileSuffix} />
-                ))
-                }
-            </Box>
-            {gitFlatLogs
-                .sort((a, b) => (b.path.localeCompare(a.path))).filter((gitFlatLog) => {                    
-                    const suffix = gitFlatLog.file.split('.').pop() || '';
-                    return !checkboxFilter.includes(`.${suffix}`)
-                })
-                .map((gitFlatLog, index) => (
-                    <Box display={'flex'} key={index}>
-                        <Typography
-                            textAlign={'left'}
-                            variant={'caption'}
-                            sx={{
-                                textDecoration: (gitFlatLog.totalDeleted > 0 ? 'line-through' : null),
-                                color: '#acacac'
-                            }}>
-                            {gitFlatLog.path.replace(gitFlatLog.file, '')}
-                        </Typography>
-                        <Typography
-                            textAlign={'left'}
-                            variant={'caption'}
-                            sx={{
-                                textDecoration: (gitFlatLog.totalDeleted > 0 ? 'line-through' : null),
-                                color: colors(gitFlatLog.file)
-                            }}>
-                            {gitFlatLog.file}
-                        </Typography>
-                    </Box>
-                ))}
+            <FilterMenuSuffix
+                suffixTypes={gitCommitFilesSuffix}
+                onChange={handleCheckbox}
+            />
+            <Scroll>
+                {gitFlatLogs
+                    .sort((a, b) => (b.path.localeCompare(a.path)
+                    )).filter((gitFlatLog) => {
+                        const suffix = gitFlatLog.file.split('.').pop() || '';
+                        return checkboxFilter.length === 0 || checkboxFilter.includes(`.${suffix}`)
+                    })
+                    .map((gitFlatLog, index) => (
+                        <Box display={'flex'} key={index}>
+                            <Typography
+                                textAlign={'left'}
+                                variant={'caption'}
+                                sx={{
+                                    textDecoration: (gitFlatLog.totalDeleted > 0 ? 'line-through' : null),
+                                    color: '#acacac'
+                                }}>
+                                {gitFlatLog.path.replace(gitFlatLog.file, '')}
+                            </Typography>
+                            <Typography
+                                textAlign={'left'}
+                                variant={'caption'}
+                                sx={{
+                                    textDecoration: (gitFlatLog.totalDeleted > 0 ? 'line-through' : null),
+                                    color: colors(gitFlatLog.file)
+                                }}>
+                                {gitFlatLog.file}
+                            </Typography>
+                        </Box>
+                    ))}
+            </Scroll>
         </Box>
     );
 }

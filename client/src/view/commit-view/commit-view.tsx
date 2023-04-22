@@ -63,8 +63,10 @@ export const CommitView = () => {
                                 subTitle={
                                     <Box>
                                         <Box>{log.path.replace(log.file, '')}</Box>
-                                        {log.strikePaths.map((strikePath) => (
-                                            <Box sx={{ textDecoration: 'line-through' }}>
+                                        {log.strikePaths.map((strikePath, index) => (
+                                            <Box
+                                                key={index}
+                                                sx={{ textDecoration: 'line-through' }}>
                                                 {strikePath.replace(log.file, '')}
                                             </Box>
                                         ))}
@@ -95,7 +97,7 @@ export const CommitView = () => {
         <Stack direction={'row'}>
             <Scroll width={'25%'}>
                 {gitFlatLogs.map(({ file, path, totalCommits, strikePaths, totalDeleted }, index) => (
-                    <CardCommit /*10 - 21*/
+                    <CardCommit
                         key={index}
                         index={index}
                         selected={selectedFileIndex === index}
@@ -103,8 +105,10 @@ export const CommitView = () => {
                         subTitle={
                             <Box>
                                 <Box>{path.replace(file, '')}</Box>
-                                {strikePaths.map((strikePath) => (
-                                    <Box sx={{ textDecoration: 'line-through' }}>
+                                {strikePaths.map((strikePath, index) => (
+                                    <Box
+                                        key={index} 
+                                        sx={{ textDecoration: 'line-through' }}>
                                         {strikePath.replace(file, '')}
                                     </Box>
                                 ))}
@@ -138,4 +142,3 @@ export const CommitView = () => {
         </Stack>
     );
 }
-// 84 - 124
