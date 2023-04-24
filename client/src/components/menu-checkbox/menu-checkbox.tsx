@@ -1,16 +1,18 @@
 import { Box, Button, Menu, MenuItem } from "@mui/material";
 import { useState } from "react";
-import { CheckboxLabel } from "../../../components/checkbox-label/checkbox-label";
+import { CheckboxLabel } from "../checkbox-label/checkbox-label";
 
-type FilterMenuSuffixProps = {
-    suffixTypes: string[];
+type MenuCheckboxProps = {
+    title: string;
+    labels: string[];
     onChange: (label: string) => void;
 }
 
-export const FilterMenuSuffix = ({
-    suffixTypes,
+export const MenuCheckbox = ({
+    title,
+    labels,
     onChange
-}: FilterMenuSuffixProps) => {
+}: MenuCheckboxProps) => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
 
@@ -25,7 +27,7 @@ export const FilterMenuSuffix = ({
     return (
         <Box>
             <Button onClick={handleClick}>
-                {'SHOW SUFFIX'}
+                {title}
             </Button>
             <Menu
                 anchorEl={anchorEl}
@@ -33,12 +35,11 @@ export const FilterMenuSuffix = ({
                 onClose={handleClose}
                 sx={{ height: '300px' }}>
 
-                {suffixTypes.map((suffixType, index) => (
-                    <MenuItem>
+                {labels.map((label, index) => (
+                    <MenuItem key={index}>
                         <CheckboxLabel
-                            key={index}
                             onChange={onChange}
-                            text={suffixType} />
+                            text={label} />
                     </MenuItem>
                 ))}
             </Menu>

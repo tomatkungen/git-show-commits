@@ -1,5 +1,4 @@
-const util = require('node:util');
-const exec = util.promisify(require('node:child_process').exec);
+const { spawn } = require('node:child_process');
 const { argv } = require('node:process');
 const fs = require('fs');
 
@@ -9,46 +8,64 @@ const git_show_json = async () => {
     const command_git_log_author = `git log -i --author="${git_log_users}" --pretty=format:"{%n \\"author\\":{ \\"date\\": \\"%ai\\", \\"name\\": \\"%an\\", \\"email\\": \\"%ae\\", \\"commit\\": \\"%s\\", \\"hash\\": \\"%h\\" } %n}" --name-status`;
     const command_cd = `cd ${get_arg().path}`;
 
-    const { stdout, stderr, error } = await exec(`${command_cd} && ${command_git_log_author}`);
+    console.log(`${command_cd} && ${command_git_log_author}`);
+    const storeData = [];
 
-    if (has_error(error, stderr))
-        return;
+    const ls = spawn(
+        `${command_cd} && ${command_git_log_author}`,
+        [],
+        { shell: true }
+    );
 
-    return create_show_author_json(stdout);
-}
-
-const has_error = (error, stderr) => {
-    if (error) { console.error(`exec error: ${error}`); return true; }
-    if (stderr) { console.error(`exec stderr: ${stderr}`); return true; }
-
-    return false;
-}
-
-const create_show_author_json = (gitLog) => {
-    if (!gitLog) return "";
-
-    const lines = gitLog.split('\n');
-    /** Example
-        {
-            "author":{ "date": "2023-04-04 21:18:03 +0200", "name": "Tomatkungen", "email": "mr_a2@hotmail.com" }
+    ls.stdout.on('data', (data) => {
+        if (`${data}`.includes('eButton/useButton.t')) {
+            console.log('data', `${data}`);
         }
-        M	parse.js
-     */
+
+        `${data}`.split('\n').forEach((d) => {
+            storeData.push(d);
+        });
+        // console.log(`stdout: ${data}`);
+    });
+
+    ls.stderr.on('data', (data) => {
+        console.error(`stderr: ${data}`);
+    });
+
+    ls.on('close', (code) => {
+        write_to_file(create_start_json());
+        create_body_json(storeData).forEach((res) => {
+            write_to_file(res, true);
+        });
+        write_to_file(create_end_json(), true);
+        
+        console.log(`Finish ${code}`);
+        // console.log(`child process exited with code ${code}`);
+    });
+}
+
+const create_start_json = () => {
+    return '[\n';
+}
+
+const create_body_json = (lines) => {
+    if (lines.length === 0) return [];
 
     let ary = [];
-    let res = '[\n';
-    // console.log(gitLog);
+    let res = [];
 
     lines.forEach((line, index) => {
-
         if (line.includes('{') && line.includes('}')) {
 
             if (index !== (lines.length - 1) && index > 2) {
-                res += `\t\t${ary.join(',')}\n`;
-                res += `\t]\n`;
-                res += `},\n`;
+                res.push(`\t\t${ary.join(',\n\t\t')}\n`);
+                res.push(`\t]\n`);
+                res.push(`},\n`);
                 ary = [];
             }
+
+            // escape double qouates in string literal, " hej":san" " -> " hej\"an\" "
+            line = line.replace(/\"\:[a-zA-Z]/g, '"');
 
             // escape double qouates in string literal, " hej"san" " -> " hej\"san\" "
             line = line.replace(
@@ -56,50 +73,61 @@ const create_show_author_json = (gitLog) => {
                 (m, g) => (g.includes('"') ? `"${g.replace(/"/g, '\\"')}"` : m)
             );
 
-            res += `{\n`;
-            res += `\t${line.trim()},\n`;
-            res += `\t"files": [\n`;
+            res.push(`{\n`);
+            res.push(`\t${line.trim()},\n`);
+            res.push(`\t"files": [\n`);
 
             return;
         }
 
         if (!line.includes('{') && !line.includes('}') && line.trim() !== '') {
             const fp = line.replace(/\s+/g, ' ').split(' ');
-                        
+
             const status = fp.shift();
+            if (status.length > 4) {
+                console.log('prev',lines[index - 1]);
+                console.log('status', line);
+            }
+
             const paths = `[${fp.map((f) => (`"${f}"`)).join(', ')}]`
             ary.push(`{ "status": "${status}", "paths": ${paths} }`);
         }
 
         if (index === lines.length - 1) {
-            res += `\t\t${ary.join(',')}\n`;
-            res += `\t]\n`;
-            res += `}\n`;
+            res.push(`\t\t${ary.join(`,\n\t\t`)}\n`);
+            res.push(`\t]\n`);
+            res.push(`}\n`);
         }
     });
-    res += ']\n';
 
+    return res;
+}
+
+const create_end_json = () => {
+    return ']\n';
+}
+
+const write_to_file = (res, append = false) => {
     if (get_arg().write === 'true') {
         try {
-            fs.writeFileSync('log.json', res);
+            append === false ?
+                fs.writeFileSync('log.json', res, { append: true }) :
+                fs.appendFileSync('log.json', res);
         } catch (err) {
             console.error(err);
         }
     }
-
-    console.log(res);
 }
 
 const get_arg = () => {
-    const arg = { // Default
+    // Default argv
+    const arg = {
         path: '.',
         users: ["tomat"],
         write: 'true',
     };
 
-    argv.forEach((val, index) => {
-        // console.log(`${index}: ${val}`);
-
+    argv.forEach((val) => {
         if (val.startsWith('--path=')) {
             arg.path = val.split('=')[1];
         }
@@ -114,6 +142,7 @@ const get_arg = () => {
     return arg;
 }
 
+// Main
 (async () => {
     await git_show_json();
 })()

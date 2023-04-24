@@ -1,40 +1,78 @@
-import { Box, Typography } from "@mui/material";
+import { AppBar, Box, Stack, Typography } from "@mui/material";
 import { useContext, useState } from "react";
+import { MenuCheckbox } from "../../components/menu-checkbox/menu-checkbox";
 import { Scroll } from "../../components/scroll/scroll";
+import { Space } from "../../components/space/space";
 import { GitContext } from "../../provider/git.provider";
-import { FilterMenuSuffix } from "./filter-menu-suffix/filter-menu-suffix";
 
 export const FilesView = () => {
-    const [checkboxFilter, setCheckboxFilter] = useState<string[]>([]);
+    const [showFiles, setShowFiles] = useState<string[]>([]);
+    const [showAuthors, setShowAuthors] = useState<string[]>([]);
+
     const gitContext = useContext(GitContext)
+
+    const handleFiles = (label: string) => {
+        const index = showFiles.indexOf(label);
+
+        index === -1 && showFiles.push(label);
+        index > -1 && showFiles.splice(index, 1);
+
+        setShowFiles([...showFiles]);
+    }
+
+    const handleAuthors = (label: string) => {
+        const index = showAuthors.indexOf(label);
+
+        index === -1 && showAuthors.push(label);
+        index > -1 && showAuthors.splice(index, 1);
+
+        setShowAuthors([...showAuthors]);
+    }
 
     const gitFlatLogs = gitContext.getGitFlatLogs();
     const gitCommitFilesSuffix = gitContext.getGitCommitFilesSuffix();
-
-    const handleCheckbox = (label: string) => {
-        const index = checkboxFilter.indexOf(label);
-
-        index === -1 && checkboxFilter.push(label);
-        index > -1 && checkboxFilter.splice(index, 1);
-
-        setCheckboxFilter([...checkboxFilter]);
-    }
+    const gitAuthorNames = gitContext.getGitAuthorNames();
 
     return (
         <Box display={'flex'} flexDirection={'column'} p={1}>
-            <FilterMenuSuffix
-                suffixTypes={gitCommitFilesSuffix}
-                onChange={handleCheckbox}
-            />
+            <AppBar position="static">
+                <Stack direction={'row'}>
+                    <MenuCheckbox
+                        title={'SHOW FILES'}
+                        labels={gitCommitFilesSuffix}
+                        onChange={handleFiles}
+                    />
+                    <MenuCheckbox
+                        title={'SHOW AUTHORS'}
+                        labels={gitAuthorNames}
+                        onChange={handleAuthors}
+                    />
+                </Stack>
+            </AppBar>
             <Scroll>
                 {gitFlatLogs
                     .sort((a, b) => (b.path.localeCompare(a.path)
                     )).filter((gitFlatLog) => {
                         const suffix = gitFlatLog.file.split('.').pop() || '';
-                        return checkboxFilter.length === 0 || checkboxFilter.includes(`.${suffix}`)
+                        return showFiles.length === 0 || showFiles.includes(`.${suffix}`)
+                    }).filter((gitFlatLog) => {
+                        return (
+                            showAuthors.length === 0 ||
+                            gitFlatLog.names.some((name) => (showAuthors.includes(name)))
+                        );
                     })
                     .map((gitFlatLog, index) => (
                         <Box display={'flex'} key={index}>
+                            {showAuthors.length >= 1 &&
+                                <Typography
+                                    textAlign={'left'}
+                                    variant={'caption'}
+                                    sx={{
+                                        color: '#FAA'
+                                    }}>
+                                    {`[${gitFlatLog.names.filter((name) => (showAuthors.includes(name))).join(', ')}]`}<Space /><Space />
+                                </Typography>
+                            }
                             <Typography
                                 textAlign={'left'}
                                 variant={'caption'}
@@ -56,7 +94,7 @@ export const FilesView = () => {
                         </Box>
                     ))}
             </Scroll>
-        </Box>
+        </Box >
     );
 }
 

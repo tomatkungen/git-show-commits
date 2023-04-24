@@ -24,13 +24,15 @@ type GitCreateContext = {
     getGitCommitsByHash(hash: string[]): typeof logs;
     getGitCommitFilesByHash(hash: string): FlatLog[];
     getGitCommitFilesSuffix(): string[];
+    getGitAuthorNames(): string[];
 }
 
 export const GitContext = React.createContext<GitCreateContext>({
     getGitFlatLogs: () => [],
     getGitCommitsByHash: () => [],
     getGitCommitFilesByHash: () => [],
-    getGitCommitFilesSuffix: () => []
+    getGitCommitFilesSuffix: () => [],
+    getGitAuthorNames: () => []
 });
 
 export const GitProvider = ({ children }: GitProviderProps) => {
@@ -38,18 +40,28 @@ export const GitProvider = ({ children }: GitProviderProps) => {
     const getGitFlatLogs = (): FlatLog[] => (gitFlatLogs());
     const getGitCommitsByHash = (hash: string[]): typeof logs => (gitCommitsByHash(hash));
     const getGitCommitFilesByHash = (hash: string): FlatLog[] => (gitCommitFilesByHash(hash));
-     const getGitCommitFilesSuffix = (): string[] => (gitCommitFilesSuffix());
+    const getGitCommitFilesSuffix = (): string[] => (gitCommitFilesSuffix());
+    const getGitAuthorNames = (): string[] => (gitAuthorNames());
 
     return (
         <GitContext.Provider value={{
             getGitFlatLogs,
             getGitCommitsByHash,
             getGitCommitFilesByHash,
-            getGitCommitFilesSuffix
+            getGitCommitFilesSuffix,
+            getGitAuthorNames
         }}>
             {children}
         </GitContext.Provider>
     )
+}
+
+const gitAuthorNames = (): string[] => {
+    return logs.reduce<string[]>((p, c) => {
+        !p.includes(c.author.name) && (p.push(c.author.name));
+
+        return p;
+    }, []);
 }
 
 const gitCommitFilesSuffix = (): string[] => {
@@ -86,22 +98,26 @@ const gitFlatLogs = (): FlatLog[] => {
             strikePaths.shift();
 
             if (index === -1) {
-                p.push({
-                    file: currentPath.split('/').pop() || '',
-                    path: currentPath,
-                    strikePaths,
-                    names: [c.author.name],
-                    emails: [c.author.email],
-                    commits: [c.author.commit],
-                    hash: [c.author.hash],
-                    totalCommits: 1,
-                    totalDeleted: (status === 'D' ? 1 : 0),         // Delete
-                    totalAdded: (status === 'A' ? 1 : 0),           // Added
-                    totalModified: (status === 'M' ? 1 : 0),        // Modified
-                    totalCopied: (status.includes('C') ? 1: 0),     // Copy
-                    totalRenamed: (status.includes('R') ? 1 : 0)    // Renaming
-                });
-
+                try { // Material ui gives me wrong parsing
+                    p.push({
+                        file: currentPath.split('/').pop() || '',
+                        path: currentPath,
+                        strikePaths,
+                        names: [c.author.name],
+                        emails: [c.author.email],
+                        commits: [c.author.commit],
+                        hash: [c.author.hash],
+                        totalCommits: 1,
+                        totalDeleted: (status === 'D' ? 1 : 0),         // Delete
+                        totalAdded: (status === 'A' ? 1 : 0),           // Added
+                        totalModified: (status === 'M' ? 1 : 0),        // Modified
+                        totalCopied: (status.includes('C') ? 1 : 0),     // Copy
+                        totalRenamed: (status.includes('R') ? 1 : 0)    // Renaming
+                    });
+                } catch (e) {
+                    console.log(e);
+                    throw new Error(`e ${e}`);
+                }
                 return p;
             }
 
