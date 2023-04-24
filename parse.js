@@ -1,6 +1,8 @@
-const { spawn } = require('node:child_process');
+const util = require('node:util');
+const exec = util.promisify(require('node:child_process').exec);
 const { argv } = require('node:process');
 const fs = require('fs');
+const readline = require('readline');
 
 // Commands
 const git_show_json = async () => {
@@ -9,39 +11,40 @@ const git_show_json = async () => {
     const command_cd = `cd ${get_arg().path}`;
 
     console.log(`${command_cd} && ${command_git_log_author}`);
+
     const storeData = [];
+    const fileName = 'output.txt';
 
-    const ls = spawn(
-        `${command_cd} && ${command_git_log_author}`,
-        [],
-        { shell: true }
-    );
+    const { stderr, error } = await exec(`${command_cd} && ${command_git_log_author} > ${__dirname}/${fileName}`);
 
-    ls.stdout.on('data', (data) => {
-        if (`${data}`.includes('eButton/useButton.t')) {
-            console.log('data', `${data}`);
-        }
+    if (has_error(error, stderr))
+        return;
 
-        `${data}`.split('\n').forEach((d) => {
-            storeData.push(d);
+    const readFile = readline.createInterface({
+        input: fs.createReadStream('output.txt'),
+        terminal: false
+    });
+
+    readFile
+        .on('line', (line) => {
+            storeData.push(line);
+        })
+        .on('close', function () {
+            write_to_file(create_start_json());
+            create_body_json(storeData).forEach((res) => {
+                write_to_file(res, true);
+            });
+            write_to_file(create_end_json(), true);
+
+            console.log(`Finish`);
         });
-        // console.log(`stdout: ${data}`);
-    });
+}
 
-    ls.stderr.on('data', (data) => {
-        console.error(`stderr: ${data}`);
-    });
+const has_error = (error, stderr) => {
+    if (error) { console.error(`exec error: ${error}`); return true; }
+    if (stderr) { console.error(`exec stderr: ${stderr}`); return true; }
 
-    ls.on('close', (code) => {
-        write_to_file(create_start_json());
-        create_body_json(storeData).forEach((res) => {
-            write_to_file(res, true);
-        });
-        write_to_file(create_end_json(), true);
-        
-        console.log(`Finish ${code}`);
-        // console.log(`child process exited with code ${code}`);
-    });
+    return false;
 }
 
 const create_start_json = () => {
@@ -85,7 +88,7 @@ const create_body_json = (lines) => {
 
             const status = fp.shift();
             if (status.length > 4) {
-                console.log('prev',lines[index - 1]);
+                console.log('prev', lines[index - 1]);
                 console.log('status', line);
             }
 
